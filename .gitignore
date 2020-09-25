@@ -2,3 +2,10 @@
 .Rhistory
 .RData
 .Ruserdata
+.Rprofile
+
+## RENV
+/renv/*
+
+## rmarkdown
+/docs/*.pdf
