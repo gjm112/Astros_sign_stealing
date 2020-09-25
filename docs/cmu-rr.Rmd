@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(ggplot2)
 library(lubridate)
+library(xtable)
 ```
 
 ## Data
@@ -25,4 +26,37 @@ sets. However, we are able to share the final merged version.
 df <- readRDS("../data/bangs-merged-final.rds") %>%
   mutate(has_bangs = if_else(has_bangs == "y", "Yes", "No"))
 ```
+
+## Table One
+
+```{r, results = "asis", message = F, warnings = F}
+tab_one <- df %>% 
+  group_by(pi_pitch_group, has_bangs) %>% 
+  summarize(n = n()) %>% 
+  mutate(prop = n / sum(n))
+print(xtable(tab_one), type = "latex")
+```
+
+### Chi-Square Test
+
+```{r}
+chisq.test(table(df$has_bangs, df$pi_pitch_group))
+```
+
+## Table Two
+
+```{r, results = "asis", message = F, warnings = F}
+df <- df %>% 
+  dplyr::mutate(., I_swing = ifelse(swing == "swing", 1, 0))
+prt_tab_one <- xtable(prop.table(table(df$has_bangs, df$I_swing), 1),
+                      caption="Table showing the Mean discharge and mean gage height on each year on each month", digits = c(3, 3, 3))
+print(prt_tab_one, type = "latex")
+```
+
+## Odds Ratios Between Tables 1 and 2
+
+```{r}
+questionr::odds.ratio(table(df$has_bangs, df$I_swing))
+```
+
 
