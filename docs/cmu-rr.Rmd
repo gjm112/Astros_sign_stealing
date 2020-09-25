@@ -1,0 +1,28 @@
+---
+title: "CMU Reproducible Research Contest Submission"
+author: "Ryan Elmore and Greg J. Matthews"
+date: "9/25/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, message = FALSE, warnings = FALSE}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+```
+
+## Data
+
+We merged three data sets together in order to complete this analysis. 
+Unfortunately, one source is proprietary and we can't share the three raw data
+sets. However, we are able to share the final merged version. 
+
+```{r data}
+df <- readRDS("../data/bangs-merged-final.rds") %>%
+  mutate(has_bangs = if_else(has_bangs == "y", "Yes", "No"))
+```
+
