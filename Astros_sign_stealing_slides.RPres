@@ -1,0 +1,206 @@
+Astros_sign_stealing_slides
+========================================================
+author: 
+date: 
+autosize: true
+
+Slide With Plot
+========================================================
+
+![alt text here](https://media.khou.com/assets/KHOU/images/9e071b90-b209-419a-be62-f19300af2e55/9e071b90-b209-419a-be62-f19300af2e55_1920x1080.jpg)
+
+First Slide
+========================================================
+
+For more details on authoring R presentations please visit <https://support.rstudio.com/hc/en-us/articles/200486468>.
+
+- Bullet 1
+- Bullet 2
+- Bullet 3
+
+Slide With Code
+========================================================
+
+```{r echo = FALSE}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(questionr)
+
+df <- readRDS("data/bangs-merged-final.rds") %>% mutate(has_bangs = if_else(has_bangs == "y", "Yes", "No"))
+
+# df %>%
+#   group_by(has_bangs, pitch_category) %>%
+#   summarize(n = n())
+
+## Bangs by top nine players
+players <- df %>%
+  group_by(batter) %>%
+  summarize(n = n()) %>%
+  arrange(desc(n)) %>%
+  top_n(9) %>%
+  pull(batter) %>%
+  as.character()
+
+p <- df %>%
+  filter(batter %in% players) %>%
+  group_by(batter, has_bangs) %>%
+  summarize(n = n()) %>%
+  ggplot(., aes(x = reorder(batter, n), y = n, fill = has_bangs)) 
+
+# p + geom_bar(stat = "identity", position = "dodge") +
+p + geom_bar(stat = "identity") +
+  scale_fill_manual("bangs", values = c("#002D62", "#EB6E1F"),
+                    labels = c("no", "yes")) +
+  labs(y = "number of pitches",
+       x = "") +
+  theme_bw() +
+  coord_flip()
+
+```
+
+Slide With Code
+========================================================
+```{r echo = FALSE}
+df_bangs_time <- inner_join(
+  df %>%
+    filter(has_bangs == "Yes") %>%
+    group_by(m = month(game_date, label = TRUE)) %>%
+    summarize(n = n()),
+  df_bangs_time <- df %>%
+    group_by(m = month(game_date, label = TRUE)) %>%
+    summarize(abs = n())) 
+df_bangs_time$ratio = df_bangs_time$n/df_bangs_time$abs
+
+p <- ggplot(data = df_bangs_time,
+            aes(x = m, y = n, fill = "#002D62"))
+p + geom_bar(stat = "identity") +
+  scale_fill_manual("bangs", values = c("#002D62")) +
+  labs(x = "month",
+       y = "number of bangs") +
+  guides(fill = F) +
+  theme_bw()
+```
+
+
+Slide With Code
+========================================================
+```{r echo = FALSE}
+df$Fastball <- ifelse(df$pi_pitch_group == "FA", "Yes", "No")
+df %>% 
+  group_by(Fastball, has_bangs) %>% 
+  summarize(n = n()) %>% 
+  mutate(prop = n / sum(n))
+
+```
+
+ 
+ 
+ Models
+========================================================
+ - Swing model
+    - fastball
+    - called strike probability
+    - count 
+    - random intercept for batter
+    
+Models
+========================================================
+ - Contact model given a swing
+    - called strike probability
+    - fastball
+    - interaction between fastball and bangs
+    - random intercepts for batter and pitcher
+    - random bangs slope for batters 
+
+ 
+ Models
+========================================================
+ - Exit Velocity model given a contact
+    - called strike probability
+    - fastball
+    - random intercepts for batter and pitcher
+ 
+ 
+Less swinging, more contact on swings
+========================================================
+ **In the presence of a bang** 
+ - Odds of a swing are about 28% lower  
+ (OR 95% CI: 0.618, 0.850)
+ - Given a swing and an offspeed pitch, odds of contact are about 80% higher (OR 95% CI: 1.342, 2.675)
+
+ Increased Exit velocity 
+========================================================
+  - Given a contact, 2.386 mile per hours average increase in exit velocity  (95% CI: 0.334, 4.451)
+ - A ball hit with exit velocity of 100 mph at a launch angle of 30 degrees will travel about 385.3 feet before landing. 
+  - A ball hit with exit velocity of 102.386 mph at a launch angle of 30 degrees will travel about 397.9 feet (i.e. 12.6 additional feet) before landing. 
+  - This is the difference between a longfly ball to straight away center field (likely an out) and a home run at Fenway Park, where home run is 389' 9" inches to center field
+  
+ 
+ 
+ Not everyone benefitted equally
+========================================================
+```{r echo = FALSE}
+ ## Ryan Elmore
+## 5 Aug 2020
+## Modeling Bangs
+
+library(dplyr)
+library(lme4)
+
+# delete pitch_playod = 6ed53428-fd72-4e13-b1ac-3d8e851d1410
+# Mother f
+# df[which(grepl("*Interference", df$at_bat_event, ignore.case = T)), ]
+df <- readRDS("data/bangs-merged-final.rds") %>%
+  dplyr::rename(., description = description.x) %>% 
+  dplyr::mutate(.,
+                has_bangs = if_else(has_bangs == "y", "Yes", "No"),
+                count = paste(ball, "-", strike, sep = ""),
+                is_swing = ifelse(swing == "swing",1,0),
+                is_miss = ifelse(call_code %in% c("S","W"), 1, 0),
+                is_contact = ifelse(call_code %in% c("S","W"), 0, 1),
+                is_foul = ifelse(description %in% 
+                                   c("Foul", "Foul Tip", "Foul (Runner Going)"),1, 0),
+                #is_fastball = ifelse(pitch_category == "FB", 1, 0), 
+                is_fastball = ifelse(pi_pitch_group == "FA", 1, 0),
+                batter_mlbid = as.character(batter_mlbid))
+                
+                swings <- df %>% 
+  dplyr::filter(., is_swing == 1)
+
+library(lme4)
+contact_model <- glmer(is_contact ~  cs_prob + is_fastball*has_bangs + + (1 + has_bangs|batter_mlbid)  + (1|mlbid)  , data = swings, family = "binomial")
+
+ids <- swings[!duplicated(swings$batter_mlbid),c("batter_mlbid","batter_first","batter_last")]
+r_effects <- data.frame(batter_mlbid = row.names(coef(contact_model)$batter_mlbid), int = coef(contact_model)$batter_mlbid$`(Intercept)`,slope = coef(contact_model)$batter_mlbid$has_bangsYes)
+r_effects <- merge(ids,r_effects, by.x = "batter_mlbid",by.y = "batter_mlbid")
+r_effects <- r_effects[order(-r_effects$slope),]
+r_effects$name <- paste(r_effects$batter_first, r_effects$batter_last)
+r_effects[1:10,c("name","int","slope")]
+```
+
+
+ Not everyone benefitted equally
+========================================================
+```{r echo = FALSE}
+r_effects[11:20,c("name","int","slope")]
+```
+
+ Let's talk about George
+========================================================
+ - On off speed pitches, George Springer has a 281% increase in his odds of contact given a swing in the presence of a bang.  
+ - In our data we have 390 George Springer swings and 135 of those swings were on off-speed pitches.  
+ - With no bang present Springer missed on 31 of 95 for a swing and miss rate of 32.63% (95% CI: 23.57%, 43.12%).
+  - With a bang present Springer missed on only 2 (TWO!?!) of 40 for a swing and miss rate of 5% (95% CI: 0.87%, 18.21%)
+ 
+
+Conclusions 
+========================================================
+ **In the presence of a bang** 
+ - Odds of a swing are about 28% lower  
+ (OR 95% CI: 0.618, 0.850)
+ - Given a swing and an offspeed pitch, odds of contact are about 80% higher (OR 95% CI: 1.342, 2.675)
+ - Given a contact, 2.386 mile per hours average increase in exit velocity  (95% CI: 0.334, 4.451)
+ - George Springer got A LOT better at making contact with off-speed pitches given a swing.  
+
+
