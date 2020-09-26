@@ -9,11 +9,12 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r packages, message = FALSE, warnings = FALSE}
+```{r packages, message = FALSE, warning = FALSE}
 library(dplyr)
 library(ggplot2)
 library(lubridate)
 library(xtable)
+library(lme4)
 ```
 
 ## Data
@@ -29,7 +30,7 @@ df <- readRDS("../data/bangs-merged-final.rds") %>%
 
 ## Table One
 
-```{r, results = "asis", message = F, warnings = F}
+```{r, results = "asis", message = F, warning = F}
 tab_one <- df %>% 
   group_by(pi_pitch_group, has_bangs) %>% 
   summarize(n = n()) %>% 
@@ -45,7 +46,7 @@ chisq.test(table(df$has_bangs, df$pi_pitch_group))
 
 ## Table Two
 
-```{r, results = "asis", message = F, warnings = F}
+```{r, results = "asis", message = F, warning = F}
 df <- df %>% 
   dplyr::mutate(., I_swing = ifelse(swing == "swing", 1, 0))
 prt_tab_one <- xtable(prop.table(table(df$has_bangs, df$I_swing), 1),
@@ -59,4 +60,162 @@ print(prt_tab_one, type = "latex")
 questionr::odds.ratio(table(df$has_bangs, df$I_swing))
 ```
 
+## Swing Model Results
+
+Some more data manipulation:
+
+```{r}
+df <- readRDS("../data/bangs-merged-final.rds") %>%
+  dplyr::rename(., description = description.x) %>% 
+  dplyr::mutate(.,
+                has_bangs = if_else(has_bangs == "y", "Yes", "No"),
+                count = paste(ball, "-", strike, sep = ""),
+                is_swing = ifelse(swing == "swing",1,0),
+                is_miss = ifelse(call_code %in% c("S","W"), 1, 0),
+                is_contact = ifelse(call_code %in% c("S","W"), 0, 1),
+                is_foul = ifelse(description %in% 
+                                   c("Foul", "Foul Tip", "Foul (Runner Going)"),1, 0),
+                #is_fastball = ifelse(pitch_category == "FB", 1, 0), 
+                is_fastball = ifelse(pi_pitch_group == "FA", 1, 0),
+                batter_mlbid = as.character(batter_mlbid))
+```
+
+```{r, results = "asis"}
+swing_model <- glmer(is_swing ~ is_fastball + has_bangs + count + 
+                       cs_prob + (1|batter_mlbid),
+                     family = binomial, data = df)
+xtable(summary(swing_model)$coef, digits = rep(4, 5))
+```
+
+### Confidence Interval
+
+```{r, cache = T}
+confint(swing_model, parm = "has_bangsYes")
+```
+
+## Contact Model
+
+```{r}
+swings <- df %>% 
+  dplyr::filter(., is_swing == 1)
+dim(swings)[1]
+```
+
+```{r, results = "asis"}
+contact_model <- glmer(is_contact ~  cs_prob + is_fastball*has_bangs + 
+                         (1 + has_bangs|batter_mlbid)  + (1|mlbid), 
+                       data = swings, 
+                       family = "binomial")
+xtable(summary(contact_model)$coef, digits = rep(4, 5))
+```
+
+### Confidence Intervals
+
+```{r}
+exp(0.5905)
+confint(contact_model, "has_bangsYes")
+
+ids <- swings[!duplicated(swings$batter_mlbid),
+              c("batter_mlbid", "batter_first", "batter_last")]
+r_effects <- data.frame(batter_mlbid = 
+                          row.names(coef(contact_model)$batter_mlbid), 
+                        int = coef(contact_model)$batter_mlbid$`(Intercept)`,
+                        slope = coef(contact_model)$batter_mlbid$has_bangsYes)
+r_effects <- merge(ids, r_effects, by.x = "batter_mlbid", by.y = "batter_mlbid")
+r_effects <- r_effects[order(-r_effects$slope), ]
+r_effects$name <- paste(r_effects$batter_first, r_effects$batter_last)
+print(xtable(r_effects[,c("name","int","slope")]), include.rownames=FALSE)
+```
+
+```{r, cache = T, results = "asis", warning = F, message = F}
+#Bootstrap to get CI for differences to start.  
+set.seed(2017)
+odds <- function(p){
+  return(p/(1-p))
+} 
+
+OR_offspeed <- OR_fastball <- c()
+ids <- swings[!duplicated(swings$batter_mlbid),
+              c("batter_mlbid", "batter_first", "batter_last")]
+#Bootstrap 
+nsim <- 500
+
+for (i in 1:nsim){print(i)
+  ind <- sample(1:nrow(swings), nrow(swings), replace = TRUE)
+  swings_boot <- swings[ind, ]
+  
+  contact_model_boot <- glmer(is_contact ~  cs_prob + is_fastball*has_bangs + 
+                                (1 + has_bangs|batter_mlbid)  + (1|mlbid), 
+                              data = swings_boot, 
+                              family = "binomial")
+  
+  r_effects <- data.frame(batter_mlbid =
+                            row.names(coef(contact_model_boot)$batter_mlbid),
+                          int = coef(contact_model_boot)$batter_mlbid$`(Intercept)`,
+                          slope = coef(contact_model_boot)$batter_mlbid$has_bangsYes)
+  r_effects <- merge(ids, r_effects, by.x = "batter_mlbid", by.y = "batter_mlbid")
+  r_effects <- r_effects[order(-r_effects$slope), ]
+  r_effects$name <- paste(r_effects$batter_first, r_effects$batter_last)
+  if (i == 1){
+    int_boot <- merge(ids, r_effects[, c("batter_mlbid","int")], 
+                      by.x = "batter_mlbid", 
+                      by.y = "batter_mlbid" , 
+                      all.x = TRUE)
+  } else {
+    int_boot <- merge(int_boot, r_effects[, c("batter_mlbid", "int")], 
+                      by.x = "batter_mlbid", 
+                      by.y = "batter_mlbid" , 
+                      all.x = TRUE)
+  }
+  
+  if (i == 1){
+    slope_boot <- merge(ids, r_effects[, c("batter_mlbid", "slope")], 
+                        by.x = "batter_mlbid", 
+                        by.y = "batter_mlbid", 
+                        all.x = TRUE)
+  } else {
+    slope_boot <- merge(slope_boot, r_effects[, c("batter_mlbid", "slope")], 
+                        by.x = "batter_mlbid", 
+                        by.y = "batter_mlbid" , 
+                        all.x = TRUE)
+  }
+  
+  newdat <- data.frame(cs_prob = median(swings$cs_prob), 
+                       is_fastball = c(0,0,1,1), 
+                       has_bangs = c("No","Yes","No","Yes"))
+  mm <- model.matrix(~ cs_prob+ is_fastball*has_bangs , newdat) ## create
+  newdat$y <- mm%*%fixef(contact_model_boot)
+  newdat$p <- exp(newdat$y)/(1+exp(newdat$y))
+  
+#  predict(contact_model_boot, newdat, re.form = NA, type = "response") #would give the same results
+  
+  OR_offspeed[i] <- odds(newdat$p[newdat$is_fastball == 0 & 
+                                    newdat$has_bangs == "Yes"]) /
+    odds(newdat$p[newdat$is_fastball == 0 & newdat$has_bangs == "No"])
+  
+  OR_fastball[i] <- odds(newdat$p[newdat$is_fastball == 1 & 
+                                    newdat$has_bangs == "Yes"]) /
+    odds(newdat$p[newdat$is_fastball == 1 & newdat$has_bangs == "No"])
+  }
+
+quantile(OR_offspeed, c(0.025, 0.975))
+quantile(OR_fastball, c(0.025, 0.975))
+
+quantile(log(OR_offspeed), c(0.025, 0.975))
+
+
+r_effects <- data.frame(batter_mlbid = row.names(coef(contact_model)$batter_mlbid), int = coef(contact_model)$batter_mlbid$`(Intercept)`,slope = coef(contact_model)$batter_mlbid$has_bangsYes)
+r_effects <- merge(ids,r_effects, by.x = "batter_mlbid",by.y = "batter_mlbid")
+r_effects <- r_effects[order(-r_effects$slope),]
+r_effects$name <- paste(r_effects$batter_first, r_effects$batter_last)
+
+ci_rand_slope <- cbind(slope_boot[,1:3],t(apply(slope_boot[,-c(1:3)],1,function(x){exp(quantile(x, c(0.025, 0.975)))})))
+
+r_effects <- merge(r_effects,ci_rand_slope, by.x = "batter_mlbid", by.y = "batter_mlbid",all.x = TRUE)
+
+r_effects$OR_out <- paste0(round(exp(r_effects$slope),3)," (",round((r_effects$`2.5%`),3),", ",round((r_effects$`97.5%`),3),")")
+r_effects <- r_effects[order(-r_effects$slope),]
+
+print(xtable(r_effects[,c("name","OR_out")]), include.rownames=FALSE)
+```
 
