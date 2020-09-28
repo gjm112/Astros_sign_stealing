@@ -17,7 +17,7 @@ library(xtable)
 library(lme4)
 ```
 
-## Data
+# Data Section
 
 We merged three data sets together in order to complete this analysis. 
 Unfortunately, one source is proprietary and we can't share the three raw data
@@ -32,7 +32,7 @@ df <- readRDS("../data/bangs-merged-final.rds") %>%
 
 The following code produces Table 1 in Elmore and Matthews. 
 
-```{r, results = "asis", message = F, warning = F, include = F}
+```{r, results = "asis", message = F, warning = F}
 tab_one <- df %>% 
   group_by(pi_pitch_group, has_bangs) %>% 
   summarize(n = n()) %>% 
@@ -41,6 +41,9 @@ print(xtable(tab_one, caption = "Table 1 from Elmore and Matthews."), type = "la
 ```
 
 ### Chi-Square Test
+
+This test corresponds to the chi-square test given in the last paragraph on page
+3 of the manuscript. 
 
 ```{r}
 chisq.test(table(df$has_bangs, df$pi_pitch_group))
@@ -64,11 +67,15 @@ prt_tab_one <- xtable(prop.table(table(df$has_bangs, df$I_swing), 1),
 print(prt_tab_one, type = "latex")
 ```
 
-## Odds Ratios Between Tables 1 and 2
+## Odds Ratios 
+
+The following test is given in the paragraph between Tables 1 and 2 on page 4. 
 
 ```{r}
 questionr::odds.ratio(table(df$has_bangs, df$I_swing))
 ```
+
+# Results Section
 
 ## Swing Model Results
 
@@ -99,8 +106,19 @@ xtable(summary(swing_model)$coef, digits = rep(4, 5))
 
 ### Confidence Interval
 
-```{r, cache = T}
-confint(swing_model, parm = "has_bangsYes")
+The point estimates and confidence intervals given in the first paragraph in 
+Section 4. 
+
+```{r, cache = T, include = F}
+tt <- confint(swing_model, parm = "has_bangsYes")
+```
+
+
+```{r}
+coef(swing_model)$batter_mlbid[1, "has_bangsYes"]
+tt
+exp(coef(swing_model)$batter_mlbid[1, "has_bangsYes"])
+exp(tt)
 ```
 
 ## Contact Model
@@ -125,8 +143,11 @@ xtable(summary(contact_model)$coef, digits = rep(4, 5))
 
 ```{r, cache = T}
 exp(0.5905)
-confint(contact_model, "has_bangsYes")
+# tt <- confint(contact_model, "has_bangsYes")
+# exp(tt)
+```
 
+```{r, include = F}
 ids <- swings[!duplicated(swings$batter_mlbid),
               c("batter_mlbid", "batter_first", "batter_last")]
 r_effects <- data.frame(batter_mlbid = 
@@ -142,7 +163,7 @@ r_effects$name <- paste(r_effects$batter_first, r_effects$batter_last)
 print(xtable(r_effects[,c("name","int","slope")]), include.rownames=FALSE)
 ```
 
-```{r, cache = T, results = "asis", warning = F, message = F, eval = F}
+```{r, cache = T, results = "asis", warning = F, message = F}
 #Bootstrap to get CI for differences to start.  
 set.seed(2017)
 odds <- function(p){
