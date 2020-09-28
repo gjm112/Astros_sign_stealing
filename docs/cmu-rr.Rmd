@@ -30,12 +30,14 @@ df <- readRDS("../data/bangs-merged-final.rds") %>%
 
 ## Table One
 
-```{r, results = "asis", message = F, warning = F}
+The following code produces Table 1 in Elmore and Matthews. 
+
+```{r, results = "asis", message = F, warning = F, include = F}
 tab_one <- df %>% 
   group_by(pi_pitch_group, has_bangs) %>% 
   summarize(n = n()) %>% 
   mutate(prop = n / sum(n))
-print(xtable(tab_one), type = "latex")
+print(xtable(tab_one, caption = "Table 1 from Elmore and Matthews."), type = "latex")
 ```
 
 ### Chi-Square Test
@@ -49,8 +51,16 @@ chisq.test(table(df$has_bangs, df$pi_pitch_group))
 ```{r, results = "asis", message = F, warning = F}
 df <- df %>% 
   dplyr::mutate(., I_swing = ifelse(swing == "swing", 1, 0))
+prt_tab_one <- xtable(table(df$has_bangs, df$I_swing),
+                      caption="Table 2 (counts) from Elmore and Matthews", digits = c(3, 3, 3))
+print(prt_tab_one, type = "latex")
+```
+
+```{r, results = "asis", message = F, warning = F}
+df <- df %>% 
+  dplyr::mutate(., I_swing = ifelse(swing == "swing", 1, 0))
 prt_tab_one <- xtable(prop.table(table(df$has_bangs, df$I_swing), 1),
-                      caption="Table showing the Mean discharge and mean gage height on each year on each month", digits = c(3, 3, 3))
+                      caption="Table 2 (proportions) from Elmore and Matthews", digits = c(3, 3, 3))
 print(prt_tab_one, type = "latex")
 ```
 
@@ -101,6 +111,8 @@ swings <- df %>%
 dim(swings)[1]
 ```
 
+### Table 3
+
 ```{r, results = "asis"}
 contact_model <- glmer(is_contact ~  cs_prob + is_fastball*has_bangs + 
                          (1 + has_bangs|batter_mlbid)  + (1|mlbid), 
@@ -111,7 +123,7 @@ xtable(summary(contact_model)$coef, digits = rep(4, 5))
 
 ### Confidence Intervals
 
-```{r}
+```{r, cache = T}
 exp(0.5905)
 confint(contact_model, "has_bangsYes")
 
@@ -124,10 +136,13 @@ r_effects <- data.frame(batter_mlbid =
 r_effects <- merge(ids, r_effects, by.x = "batter_mlbid", by.y = "batter_mlbid")
 r_effects <- r_effects[order(-r_effects$slope), ]
 r_effects$name <- paste(r_effects$batter_first, r_effects$batter_last)
+```
+
+```{r, results = "asis"}
 print(xtable(r_effects[,c("name","int","slope")]), include.rownames=FALSE)
 ```
 
-```{r, cache = T, results = "asis", warning = F, message = F}
+```{r, cache = T, results = "asis", warning = F, message = F, eval = F}
 #Bootstrap to get CI for differences to start.  
 set.seed(2017)
 odds <- function(p){
@@ -217,5 +232,35 @@ r_effects$OR_out <- paste0(round(exp(r_effects$slope),3)," (",round((r_effects$`
 r_effects <- r_effects[order(-r_effects$slope),]
 
 print(xtable(r_effects[,c("name","OR_out")]), include.rownames=FALSE)
+```
+
+## Exit Velocity Model
+
+```{r, include = F}
+contacts <- swings %>% 
+  dplyr::filter(., is_contact == 1 )
+
+speed_model <- lmer(launch_speed ~   cs_prob + is_fastball + has_bangs   + (1|batter_mlbid) + (1|mlbid)  , data = contacts)
+summary(speed_model)
+confint(speed_model)
+coef(speed_model)
+```
+
+### Table 4
+
+```{r, results = "asis"}
+print(xtable(summary(speed_model)$coef, caption = "Table 4 in Elmore Matthews"))
+```
+
+### Table 4 P-Values
+
+```{r}
+2*(1 - pnorm(summary(speed_model)$coef[,3]))
+```
+
+## Session Information
+
+```{r}
+sessionInfo()
 ```
 
