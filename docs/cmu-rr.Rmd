@@ -176,7 +176,7 @@ ids <- swings[!duplicated(swings$batter_mlbid),
 #Bootstrap 
 nsim <- 500
 
-for (i in 1:nsim){print(i)
+for (i in 1:nsim){#print(i)
   ind <- sample(1:nrow(swings), nrow(swings), replace = TRUE)
   swings_boot <- swings[ind, ]
   
@@ -253,6 +253,20 @@ r_effects$OR_out <- paste0(round(exp(r_effects$slope),3)," (",round((r_effects$`
 r_effects <- r_effects[order(-r_effects$slope),]
 
 print(xtable(r_effects[,c("name","OR_out")]), include.rownames=FALSE)
+```
+
+## George Springer specific statistics
+
+```{r}
+#n swings on off speed pitches with x contacts given no bangs prior to pitch 
+n <- 95
+x <- 31
+prop.test(x, n)$conf.int
+
+#n swings on off speed pitches with x contacts given bangs prior to pitch
+n <- 40
+x <- 2
+prop.test(x,n)$conf.int
 ```
 
 ## Exit Velocity Model
