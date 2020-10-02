@@ -258,15 +258,20 @@ print(xtable(r_effects[,c("name","OR_out")]), include.rownames=FALSE)
 ## George Springer specific statistics
 
 ```{r}
+sum(swings$batter == "George Springer")
+sum(swings$batter == "George Springer" & swings$is_fastball == 0)
+
+gs <- subset(swings, batter == "George Springer" & is_fastball == 0)
+
 #n swings on off speed pitches with x contacts given no bangs prior to pitch 
-n <- 95
-x <- 31
-prop.test(x, n)$conf.int
+(n <- sum(gs$has_bangs == "No"))
+(x <- sum(gs$has_bangs == "No" & gs$is_contact == 0))
+prop.test(x, n)
 
 #n swings on off speed pitches with x contacts given bangs prior to pitch
-n <- 40
-x <- 2
-prop.test(x,n)$conf.int
+(n <- sum(gs$has_bangs == "Yes"))
+(x <- sum(gs$has_bangs == "Yes" & gs$is_contact == 0))
+prop.test(x,n)
 ```
 
 ## Exit Velocity Model
