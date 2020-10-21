@@ -1,4 +1,4 @@
-Bang the Can Slowly: An Investigation into the 2017 Houston Astros
+Bang the Can Slowly: An Investigation into the 2017 Houston Astros 
 ========================================================
 author: Ryan T. Elmore and Gregory J. Matthews
 date: October 25, 2020
@@ -101,10 +101,10 @@ How good was the code?
 ```{r echo = FALSE, fig.width = 10}
 library(ggmosaic)
 df$Fastball <- ifelse(df$pi_pitch_group == "FA", "Yes", "No") 
-df %>% 
-  group_by(has_bangs,Fastball) %>% 
-  summarize(n = n()) %>% 
-  mutate(prop = n / sum(n))
+# df %>% 
+#   group_by(has_bangs,Fastball) %>% 
+#   summarize(n = n()) %>% 
+#   mutate(prop = n / sum(n))
 
 temp <- df[,c("Fastball","has_bangs")]
 temp$Fastball <- as.factor(temp$Fastball)
@@ -157,8 +157,8 @@ Results
  Increased Exit velocity 
 ========================================================
  - A ball hit with exit velocity of 100 mph at a launch angle of 30 degrees will travel about 385.3 feet before landing. 
-  - A ball hit with exit velocity of 102.386 mph at a launch angle of 30 degrees will travel about 397.9 feet (i.e. 12.6 additional feet) before landing. 
-  - This is the difference between a longfly ball to straight away center field (likely an out) and a home run at Fenway Park, where home run is 389' 9" inches to center field
+ - A ball hit with exit velocity of 102.386 mph at a launch angle of 30 degrees will travel about 397.9 feet (i.e. 12.6 additional feet) before landing. 
+ - This is the difference between a longfly ball to straight away center field (likely an out) and a home run at Fenway Park, where home run is 389' 9" inches to center field
   
  
  
