@@ -8,9 +8,13 @@ Sign Stealing
 ========================================================
  - In baseball, it is helpful for the the catcher to know the type of pitch that the pitcher will throw. 
  - In order to communicate this information, the catcher will flash signs to the pitcher with his hand between his legs. 
- - It is important for the pitcher and catcher that the batter does not know the type of pitch that is coming as batter uncertainty about the type of the pitch is an important tool in a pitchers arsenal
+ - It is important for the pitcher and catcher that the batter does not know the type of pitch that is coming as batter uncertainty about the type of the pitch is an important tool in a pitchers arsenal.
+ 
 
-Sign Stealing
+
+![alt text here](https://www.ebuyer.com/blog/wp-content/uploads/2017/09/baseball-catcher-giving-signs.jpg)
+
+How did the Astros steal signs?
 ========================================================
 
 ![alt text here](https://media.khou.com/assets/KHOU/images/9e071b90-b209-419a-be62-f19300af2e55/9e071b90-b209-419a-be62-f19300af2e55_1920x1080.jpg)
@@ -21,20 +25,19 @@ Did it actually affect the game?
 
  - "**Our opinion is this didn't impact the game**. We had a good team. We won the World Series and we'll leave it at that" - Jim Crane, Houston Astros owner, February 13, 2020
  - So.....did it affect the game?
+ - How can we answer this quesion? 
+  - Ideal data: Pitch-level data with information about...
+      - Type of pitch
+      - Pitch outcome (Batter Swing?  Batter Contact?) 
+      - Exit Velocity
+      - **Was there a bang on the pitch?** (Thank you, Tony Adams!)
  
- How can we answer this question? 
+
+ 
+Which players received the most stolen signs? 
 ========================================================
 
- - Ideal data: Pitch-level data with information about...
-  - Type of pitch
-  - Pitch outcome (Batter Swing?  Batter Contact?) 
-  - Exit Velocity
-  - **Was there a bang on the pitch?** (Thank you, Tony Adams!)
- 
-Which players stole the most signs? 
-========================================================
-
-```{r echo = FALSE, fig.width = 10}
+```{r echo = FALSE, fig.width = 12, fig.height = 12}
 library(dplyr)
 library(ggplot2)
 library(lubridate)
@@ -68,13 +71,12 @@ p + geom_bar(stat = "identity") +
   labs(y = "number of pitches",
        x = "") +
   theme_bw() +
-  coord_flip()
-
+  coord_flip() + theme(legend.text = element_text(colour="black", size = 25)) + theme(legend.title = element_text(colour="black", size=25)) +   theme(text = element_text(size=25)) + theme(axis.text.x = element_text(size=25))
 ```
 
 Bangs over the season
 ========================================================
-```{r echo = FALSE, fig.width = 10}
+```{r echo = FALSE, fig.width = 12, fig.height = 12}
 df_bangs_time <- inner_join(
   df %>%
     filter(has_bangs == "Yes") %>%
@@ -92,18 +94,18 @@ p + geom_bar(stat = "identity") +
   labs(x = "month",
        y = "number of bangs") +
   guides(fill = F) +
-  theme_bw()
+  theme_bw()  + theme(text = element_text(size=25)) + theme(axis.text.x = element_text(size=25))
 ```
 
 
-How good was the code? 
+How good was the scheme? 
 ========================================================
-```{r echo = FALSE, fig.width = 10}
+```{r echo = FALSE, fig.width = 15, fig.height = 12}
 library(ggmosaic)
 df$Fastball <- ifelse(df$pi_pitch_group == "FA", "Yes", "No") 
-# df %>% 
-#   group_by(has_bangs,Fastball) %>% 
-#   summarize(n = n()) %>% 
+# df %>%
+#   group_by(has_bangs,Fastball) %>%
+#   summarize(n = n()) %>%
 #   mutate(prop = n / sum(n))
 
 temp <- df[,c("Fastball","has_bangs")]
@@ -116,15 +118,16 @@ hou1 <- subset(teamcolors, name == "Houston Astros")$primary
 hou2 <- subset(teamcolors, name == "Houston Astros")$secondary
 
 p <- ggplot(data = temp) +
-   geom_mosaic(aes(x = product(Fastball,has_bangs), fill=Fastball), na.rm=TRUE, alpha = 1) + labs(x = "Bangs",y="", title='How often were bangs correct?') 
+   geom_mosaic(aes(x = product(Fastball,has_bangs), fill=Fastball), na.rm=TRUE, alpha = 1) + labs(x = "",y="") 
 # Create a text
-grob <- grobTree(textGrob("No", x=0.395,  y=0.05, hjust=0,
-  gp=gpar(col="black", fontsize=13, fontface="italic")))
+grob <- grobTree(textGrob("No \nBangs", x=0.4304963,  y=0.4153803,just = "center",rot = 0, gp=gpar(col="white", fontsize=50)))
 # Plot
-grob2 <- grobTree(textGrob("Yes", x=0.84,  y=0.05, hjust=0,
-  gp=gpar(col="black", fontsize=13, fontface="italic")))
+grob2 <- grobTree(textGrob("Bangs", x=0.88,  y=0.5, just = "center",rot = 90,
+  gp=gpar(col="white", fontsize=50)))
 # Plot
-p + annotation_custom(grob) + annotation_custom(grob2) + scale_fill_manual(values = c(hou2, hou1)) +theme_bw()
+p + annotation_custom(grob) + annotation_custom(grob2) + scale_fill_manual(values = c(hou2, hou1)) + theme_bw()  + theme(text = element_text(size=25)) + theme(axis.text.x = element_text(size=25))
+
+#+ theme(axis.text=element_text(size=50),axis.title=element_text(size=50,face="bold"))
 
 
 
@@ -211,10 +214,12 @@ Curious, George
 ========================================================
  - On off speed pitches, George Springer has a 281% increase (OR 3.81, 95% CI: 2.042, 12.864) in his odds of contact given a swing in the presence of a bang.  
  - In our data we have 390 George Springer swings and 165 of those swings were on off-speed pitches.  
- - With no bang present Springer missed on 40 of 119 for a swing and miss rate of 33.61% (95% CI: 25.37%, 42.93%).
- - With a bang present Springer missed on only 3 (THREE!?!) of 46 for a swing and miss rate of 6.52% (95% CI: 1.7%, 18.93%)
+
  
-```{r echo = FALSE, fig.width = 10}
+```{r echo = FALSE, fig.width = 12, fig.height = 10}
+# <!-- - With no bang present Springer missed on 40 of 119 for a swing and miss rate of 33.61% (95% CI: 25.37%, 42.93%). -->
+# <!-- - With a bang present Springer missed on only 3 (THREE!?!) of 46 for a swing and miss rate of 6.52% (95% CI: 1.7%, 18.93%) -->
+
 ## Ryan Elmore
 ## 5 Aug 2020
 ## Modeling Bangs
@@ -244,7 +249,8 @@ df <- readRDS("data/bangs-merged-final.rds") %>%
 
 library(ggmosaic)
 #df$Fastball <- ifelse(df$pi_pitch_group == "FA", "Yes", "No") 
-swings$Contact <- ifelse(swings$is_contact == 1, "Contact", "Miss") 
+swings$Contact <- ifelse(swings$is_contact == 1, "Yes", "No") 
+swings$Contact <- relevel(factor(swings$Contact), "No")
 temp <- subset(swings, batter == "George Springer" & is_swing == 1 & is_fastball == 0)
 
 #table(temp$has_bangs,temp$Contact)
@@ -255,15 +261,17 @@ hou1 <- subset(teamcolors, name == "Houston Astros")$primary
 hou2 <- subset(teamcolors, name == "Houston Astros")$secondary
 
 p <- ggplot(data = temp) +
-   geom_mosaic(aes(x = product(Contact,has_bangs), fill=Contact), na.rm=TRUE, alpha = 1) + labs(x = "Bangs",y="", title='Springer swings at off-speed pitches') 
+   geom_mosaic(aes(x = product(Contact,has_bangs), fill=Contact), na.rm=TRUE, alpha = 1) + labs(x = "",y="", title='Springer swings at off-speed pitches') 
 # Create a text
-grob <- grobTree(textGrob("No", x=0.33,  y=0.05, hjust=0,
-  gp=gpar(col="black", fontsize=13, fontface="italic")))
+grob <- grobTree(textGrob("No\nBangs", x=0.7212121/2,  y=1-0.6638655,just = "center",rot = 0, gp=gpar(col="white", fontsize=50)))
 # Plot
-grob2 <- grobTree(textGrob("Yes", x=0.77,  y=0.05, hjust=0,
-  gp=gpar(col="black", fontsize=13, fontface="italic")))
+grob2 <- grobTree(textGrob("Bangs", x=.83,  y=0.5, just = "center",rot = 90,
+  gp=gpar(col="white", fontsize=50)))
 # Plot
-p + annotation_custom(grob) + annotation_custom(grob2) + scale_fill_manual(values = c(hou2, hou1)) +theme_bw()
+# Plot
+p + annotation_custom(grob) + annotation_custom(grob2) + scale_fill_manual(values = c(hou2, hou1)) +theme_bw() + theme(legend.text = element_text(colour="black", size = 25)) + theme(legend.title = element_text(colour="black", size=25))  + theme(text = element_text(size=25)) + theme(axis.text.x = element_text(size=25))
+
+#table(temp$Contact,temp$has_bangs)
 
 
 
@@ -272,7 +280,7 @@ p + annotation_custom(grob) + annotation_custom(grob2) + scale_fill_manual(value
 
 Conclusions 
 ========================================================
- **In the presence of a bang** 
+ **In the presence of a bang...** 
  - Odds of a swing are about 28% lower  
  (OR 95% CI: 0.618, 0.850)
  - Given a swing and an offspeed pitch, odds of contact are about 80% higher (OR 95% CI: 1.342, 2.675)
