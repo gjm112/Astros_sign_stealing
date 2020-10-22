@@ -10,7 +10,8 @@ Sign Stealing
  - In order to communicate this information, the catcher will flash signs to the pitcher with his hand between his legs. 
  - It is important for the pitcher and catcher that the batter does not know the type of pitch that is coming as batter uncertainty about the type of the pitch is an important tool in a pitchers arsenal.
  
-
+Sign Stealing
+========================================================
 
 ![alt text here](https://www.ebuyer.com/blog/wp-content/uploads/2017/09/baseball-catcher-giving-signs.jpg)
 
@@ -37,7 +38,7 @@ Did it actually affect the game?
 Which players received the most stolen signs? 
 ========================================================
 
-```{r echo = FALSE, fig.width = 12, fig.height = 12}
+```{r echo = FALSE, fig.width = 10, fig.height = 6}
 library(dplyr)
 library(ggplot2)
 library(lubridate)
@@ -76,7 +77,7 @@ p + geom_bar(stat = "identity") +
 
 Bangs over the season
 ========================================================
-```{r echo = FALSE, fig.width = 12, fig.height = 12}
+```{r echo = FALSE, fig.width = 8, fig.height = 6}
 df_bangs_time <- inner_join(
   df %>%
     filter(has_bangs == "Yes") %>%
@@ -100,7 +101,7 @@ p + geom_bar(stat = "identity") +
 
 How good was the scheme? 
 ========================================================
-```{r echo = FALSE, fig.width = 15, fig.height = 12}
+```{r echo = FALSE, fig.width = 9, fig.height = 6}
 library(ggmosaic)
 df$Fastball <- ifelse(df$pi_pitch_group == "FA", "Yes", "No") 
 # df %>%
@@ -154,7 +155,7 @@ Results
   - Odds of a swing are about 28% lower (OR 95% CI: 0.618, 0.850)
  2. **More contact on swings (on off-speed pitches)**
   - Given a swing and an offspeed pitch, odds of contact are about 80% higher (OR 95% CI: 1.342, 2.675)
- 3. **Increased Exist Velocity**
+ 3. **Increased Exit Velocity**
   - Given a contact, 2.386 mile per hours average increase in exit velocity  (95% CI: 0.334, 4.451)
 
  Increased Exit velocity 
@@ -216,7 +217,7 @@ Curious, George
  - In our data we have 390 George Springer swings and 165 of those swings were on off-speed pitches.  
 
  
-```{r echo = FALSE, fig.width = 12, fig.height = 10}
+```{r echo = FALSE, fig.width = 10, fig.height = 5}
 # <!-- - With no bang present Springer missed on 40 of 119 for a swing and miss rate of 33.61% (95% CI: 25.37%, 42.93%). -->
 # <!-- - With a bang present Springer missed on only 3 (THREE!?!) of 46 for a swing and miss rate of 6.52% (95% CI: 1.7%, 18.93%) -->
 
