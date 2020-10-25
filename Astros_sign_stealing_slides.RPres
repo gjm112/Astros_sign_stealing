@@ -65,6 +65,11 @@ p <- df %>%
   summarize(n = n()) %>%
   ggplot(., aes(x = reorder(batter, n), y = n, fill = has_bangs)) 
 
+# df %>%
+#   filter(batter %in% players) %>%
+#   group_by(batter, pi_pitch_group == "FA") %>%
+#   summarize(n = n())
+
 # p + geom_bar(stat = "identity", position = "dodge") +
 p + geom_bar(stat = "identity") +
   scale_fill_manual("bangs", values = c("#002D62", "#EB6E1F"),
@@ -295,6 +300,7 @@ Conclusions
  - Gregory J. Matthews (@statsinthewild)
  - Github Repo: gjm112/Astros_sign_stealing
  - Bangs Data: http://signstealingscandal.com/files/
+ - Harry Pavlidis and Baseball Prospectus 
  
 
 
