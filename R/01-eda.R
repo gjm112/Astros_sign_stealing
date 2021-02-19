@@ -22,6 +22,12 @@ df %>%
   group_by(has_bangs, pitch_category, swing) %>%
   summarize(n = n())
 
+#Swing rates by pitch type
+df %>%
+  mutate(fastball = pitch_category == "FB") %>%
+  group_by(fastball) %>%
+  summarize(n = mean(swing == "swing"))
+
 ## Exit velocity by bangs
 
 p <-  df %>% 
